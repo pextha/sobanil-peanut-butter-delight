@@ -8,89 +8,147 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm peanut butter inspired palette */
+    --background: 40 33% 98%;
+    --foreground: 30 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 30 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 30 20% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Fresh green accent - Sobanil brand */
+    --primary: 145 63% 32%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm peanut brown */
+    --secondary: 32 45% 75%;
+    --secondary-foreground: 30 20% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Creamy muted tones */
+    --muted: 35 30% 94%;
+    --muted-foreground: 30 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Golden accent */
+    --accent: 38 90% 50%;
+    --accent-foreground: 30 20% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 145 63% 32%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 35 25% 96%;
+    --sidebar-foreground: 30 20% 15%;
+    --sidebar-primary: 145 63% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 35 30% 94%;
+    --sidebar-accent-foreground: 30 20% 15%;
+    --sidebar-border: 35 20% 88%;
+    --sidebar-ring: 145 63% 32%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --chart-1: 145 63% 32%;
+    --chart-2: 38 90% 50%;
+    --chart-3: 32 45% 55%;
+    --chart-4: 35 60% 70%;
+    --chart-5: 30 20% 35%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar: 35 25% 96%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Custom Sobanil tokens */
+    --peanut-cream: 35 40% 85%;
+    --peanut-brown: 30 35% 45%;
+    --peanut-dark: 25 30% 25%;
+    --leaf-green: 145 63% 32%;
+    --leaf-light: 140 50% 92%;
+    --honey-gold: 38 90% 50%;
+    --warm-white: 40 33% 98%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 
-    --sidebar-border: 220 13% 91%;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+
+    --tracking-normal: 0em;
+
+    --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 25 25% 10%;
+    --foreground: 35 25% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 25 20% 15%;
+    --card-foreground: 35 25% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 25 20% 15%;
+    --popover-foreground: 35 25% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 145 55% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 32 30% 25%;
+    --secondary-foreground: 35 25% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 25 15% 20%;
+    --muted-foreground: 35 15% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 38 80% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 25 15% 25%;
+    --input: 25 15% 25%;
+    --ring: 145 55% 45%;
+
+    --sidebar-background: 25 20% 12%;
+    --sidebar-foreground: 35 25% 95%;
+    --sidebar-primary: 145 55% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 25 15% 20%;
+    --sidebar-accent-foreground: 35 25% 95%;
+    --sidebar-border: 25 15% 25%;
+    --sidebar-ring: 145 55% 45%;
+
+    --chart-1: 145 55% 45%;
+    --chart-2: 38 80% 45%;
+    --chart-3: 32 35% 50%;
+    --chart-4: 35 50% 60%;
+    --chart-5: 30 15% 55%;
+
+    --sidebar: 25 20% 12%;
+
+    --peanut-cream: 35 30% 30%;
+    --peanut-brown: 30 25% 55%;
+    --peanut-dark: 25 20% 75%;
+    --leaf-green: 145 55% 45%;
+    --leaf-light: 140 30% 20%;
+    --honey-gold: 38 80% 45%;
+    --warm-white: 25 25% 10%;
   }
 }
 
