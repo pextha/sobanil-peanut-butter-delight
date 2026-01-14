@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/lib/cart';
 import { cn } from '@/lib/utils';
+import logoImage from '@/assets/sobanil-logo.jpg';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,8 +27,12 @@ export function Navbar() {
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Leaf className="w-6 h-6 text-primary-foreground" />
+          <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform">
+            <img
+              src={logoImage}
+              alt="Sobanil Logo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="text-xl font-bold text-foreground tracking-tight">
             Sobanil

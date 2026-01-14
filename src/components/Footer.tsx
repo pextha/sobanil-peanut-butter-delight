@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import logoImage from '@/assets/sobanil-logo.jpg';
 
 export function Footer() {
   return (
@@ -10,9 +11,13 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform">
+            <img
+              src={logoImage}
+              alt="Sobanil Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
               <span className="text-xl font-bold tracking-tight">Sobanil</span>
             </Link>
             <p className="text-peanut-cream/80 text-sm leading-relaxed">
