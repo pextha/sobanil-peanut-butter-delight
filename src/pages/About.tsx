@@ -55,26 +55,33 @@ const About = () => {
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
-              <span className="text-primary font-medium">Est. 2015</span>
+              <span className="text-primary font-medium"></span>
               <h2 className="text-3xl md:text-4xl font-bold mt-2 mb-6 text-foreground">
                 A Passion for Peanuts
               </h2>
               <div className="space-y-4 text-muted-foreground text-lg leading-relaxed">
                 <p>
-                  Sobanil began with a simple idea: to create the most delicious, 
-                  natural peanut butter using only the finest ingredients. Founded 
-                  by a family of peanut farmers, we've grown from a small kitchen 
-                  operation to a beloved brand trusted by thousands.
+                  
+                SOBANIL was born in Sri Lanka in 2020 with one clear goal:
+                to make real peanut butter nothing more, nothing less.
                 </p>
                 <p>
-                  Every jar of Sobanil peanut butter tells a story of dedication, 
-                  quality, and love. We source our peanuts exclusively from local 
-                  farms that share our commitment to sustainable farming practices.
+                  At SOBANIL, we use carefully selected peanuts, slow-roasted and ground in small batches to preserve their natural taste, oils, and nutrition.
                 </p>
                 <p>
-                  Today, we're proud to offer a range of premium peanut butter 
-                  varieties that cater to every taste – from classic creamy to 
-                  adventurous flavored options.
+                  No preservatives.
+                  No artificial ingredients.
+                  Just pure, natural goodness.
+
+                </p>
+                <p>
+                 What started as a small operation has grown through trust, quality, and a shared love for clean eating. Today, SOBANIL fuels active lifestyles, healthy kitchens, and guilt-free moments across Sri Lanka.
+
+                </p>
+                <p>
+                Simple. Natural. Honest.
+                That’s the SOBANIL promise.
+
                 </p>
               </div>
             </div>
