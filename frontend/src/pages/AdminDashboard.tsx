@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // NEW: Query Tools
+import api from '@/lib/api'; // NEW: API Helper
+import { toast } from 'sonner'; // NEW: Notifications
 import {
   LayoutDashboard,
   Package,
@@ -12,7 +15,8 @@ import {
   Plus,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,9 +29,9 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { products } from '@/lib/products';
 import { cn } from '@/lib/utils';
 
+// Images (Keep existing map for fallbacks)
 import productClassicCreamy from '@/assets/product-classic-creamy.jpg';
 import productCrunchy from '@/assets/product-crunchy.jpg';
 import productOrganic from '@/assets/product-organic.jpg';
@@ -42,10 +46,82 @@ const imageMap: Record<string, string> = {
 
 type Tab = 'dashboard' | 'products' | 'orders';
 
+// Define Real Product Type
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  flavor: string;
+  countInStock: number;
+  imageUrl: string;
+}
+
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
+  // --- 1. SECURITY CHECK ---
+  useEffect(() => {
+    const userInfo = localStorage.getItem('userInfo');
+    if (!userInfo) {
+      navigate('/login');
+    } else {
+      const user = JSON.parse(userInfo);
+      if (!user.isAdmin) {
+        navigate('/'); // Redirect non-admins
+      }
+    }
+  }, [navigate]);
+
+  // --- 2. FETCH REAL PRODUCTS ---
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data } = await api.get<Product[]>('/products');
+      return data;
+    },
+  });
+
+  // --- 3. DELETE FUNCTION ---
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/products/${id}`);
+    },
+    onSuccess: () => {
+      toast.success('Product Deleted');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Delete failed');
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  // --- 4. CREATE FUNCTION ---
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/products', {}); // Creates Sample
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success('Sample Product Created');
+      navigate(`/admin/product/${data._id}/edit`); // Go to edit page
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Create failed');
+    },
+  });
+
+  // --- MOCK DATA (For features we haven't built yet) ---
   const mockOrders = [
     { id: 'ORD-001', customer: 'John Doe', email: 'john@example.com', total: 34.97, status: 'Delivered', date: '2026-01-10' },
     { id: 'ORD-002', customer: 'Jane Smith', email: 'jane@example.com', total: 21.48, status: 'Shipped', date: '2026-01-12' },
@@ -54,7 +130,7 @@ const AdminDashboard = () => {
   ];
 
   const stats = [
-    { title: 'Total Products', value: products.length, icon: Package },
+    { title: 'Total Products', value: products?.length || 0, icon: Package }, // Real Count
     { title: 'Total Orders', value: mockOrders.length, icon: ShoppingCart },
     { title: 'Customers', value: 156, icon: Users },
     { title: 'Revenue', value: '$4,523', icon: LayoutDashboard },
@@ -179,7 +255,9 @@ const AdminDashboard = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-muted-foreground text-sm">{stat.title}</p>
-                          <p className="text-2xl font-bold text-foreground mt-1">{stat.value}</p>
+                          <p className="text-2xl font-bold text-foreground mt-1">
+                            {isLoading && stat.title === 'Total Products' ? '...' : stat.value}
+                          </p>
                         </div>
                         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                           <stat.icon className="w-6 h-6 text-primary" />
@@ -190,7 +268,7 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              {/* Recent Orders */}
+              {/* Recent Orders (Kept Static for now) */}
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle>Recent Orders</CardTitle>
@@ -227,14 +305,22 @@ const AdminDashboard = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">Product Management</h2>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
+                {/* NEW: Button triggers 'createMutation' */}
+                <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+                  {createMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
                   Add Product
                 </Button>
               </div>
 
               <Card className="border-0 shadow-md">
                 <CardContent className="p-0">
+                  {isLoading ? (
+                     <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>
+                  ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -246,37 +332,51 @@ const AdminDashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {products.map(product => (
-                        <TableRow key={product.id}>
+                      {products?.map(product => (
+                        <TableRow key={product._id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
+                              {/* Display Image with Fallback */}
                               <img
-                                src={imageMap[product.image] || product.image}
+                                src={imageMap[product.imageUrl] || product.imageUrl || '/placeholder.jpg'}
                                 alt={product.name}
                                 className="w-10 h-10 rounded-lg object-cover"
+                                onError={(e) => {
+                                  // Fallback if image fails to load
+                                  (e.target as HTMLImageElement).src = '/placeholder.svg'; 
+                                }}
                               />
                               <div>
                                 <p className="font-medium">{product.name}</p>
-                                <p className="text-muted-foreground text-xs">{product.weight}</p>
+                                <p className="text-muted-foreground text-xs">{product.flavor}</p>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell className="capitalize">{product.category}</TableCell>
-                          <TableCell>${product.price.toFixed(2)}</TableCell>
+                          <TableCell>Rs. {product.price}</TableCell>
                           <TableCell>
-                            <Badge variant={product.inStock ? 'default' : 'destructive'}>
-                              {product.inStock ? 'In Stock' : 'Out of Stock'}
+                            <Badge variant={product.countInStock > 0 ? 'default' : 'destructive'}>
+                              {product.countInStock > 0 ? 'In Stock' : 'Out of Stock'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon">
+                              {/* NEW: Edit Button navigates to Edit Page */}
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => navigate(`/admin/product/${product._id}/edit`)}
+                              >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="text-destructive">
+                              
+                              {/* NEW: Delete Button triggers delete */}
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-destructive"
+                                onClick={() => handleDelete(product._id)}
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
@@ -285,6 +385,7 @@ const AdminDashboard = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  )}
                 </CardContent>
               </Card>
             </div>
