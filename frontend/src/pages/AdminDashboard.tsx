@@ -306,12 +306,8 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">Product Management</h2>
                 {/* NEW: Button triggers 'createMutation' */}
-                <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-                  {createMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4 mr-2" />
-                  )}
+                <Button onClick={() => navigate('/admin/product/add')}>
+                  <Plus className="w-4 h-4 mr-2" />
                   Add Product
                 </Button>
               </div>

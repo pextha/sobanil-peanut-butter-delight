@@ -40,24 +40,7 @@ export const deleteProduct = asyncHandler(async (req: Request, res: Response) =>
   }
 });
 
-// @desc    Create a product
-// @route   POST /api/products
-// @access  Private/Admin
-export const createProduct = asyncHandler(async (req: any, res: Response) => {
-  // We create a "Sample" product first, then you edit it.
-  const product = new Product({
-    name: 'Sample Peanut Butter',
-    price: 0,
-    user: req.user._id,
-    imageUrl: '/images/sample.jpg', // Matches your Schema
-    flavor: 'Original',             // Matches your Schema
-    countInStock: 0,
-    description: 'Sample description',
-  });
 
-  const createdProduct = await product.save();
-  res.status(201).json(createdProduct);
-});
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
@@ -82,4 +65,25 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
     res.status(404);
     throw new Error('Product not found');
   }
+});
+
+// @desc    Create a product
+// @route   POST /api/products
+// @access  Private/Admin
+export const createProduct = asyncHandler(async (req: any, res: Response) => {
+  const { name, price, description, imageUrl, flavor, category, countInStock } = req.body;
+
+  const product = new Product({
+    name: name,
+    price: price,
+    user: req.user._id,
+    imageUrl: imageUrl, 
+    flavor: flavor,
+    category: category,
+    countInStock: countInStock,
+    description: description,
+  });
+
+  const createdProduct = await product.save();
+  res.status(201).json(createdProduct);
 });
