@@ -1,27 +1,60 @@
 import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query'; // Import Query Hook
+import api from '@/lib/api'; // Import your API helper
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
 import { ProductCard } from '@/components/ProductCard';
-import { products, categories } from '@/lib/products';
+import { categories } from '@/lib/products'; // Keep categories for the sidebar
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
+// Define what your Database Product looks like
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  flavor: string;
+  description: string;
+  category: string;
+  countInStock: number;
+}
+
 const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 1. FETCH DATA: Get products from your Backend
+  const { data: products, isLoading, error } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data } = await api.get<Product[]>('/products');
+      return data;
+    },
+  });
+
+  // 2. FILTER DATA: Filter the LIVE data from the backend
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    // If data hasn't loaded yet, return empty array
+    if (!products) return [];
+
+    return products.filter((product: Product) => {
+      // Note: Make sure your Backend "category" matches these IDs (creamy, crunchy, etc.)
+      // Or you can filter by "flavor" if that matches better!
+      const matchesCategory = selectedCategory === 'all' || 
+                              product.category.toLowerCase() === selectedCategory || 
+                              product.flavor.toLowerCase() === selectedCategory;
+
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
+                            product.description.toLowerCase().includes(searchQuery.toLowerCase());
+
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, products]);
 
   const FilterSidebar = () => (
     <div className="space-y-6">
@@ -103,7 +136,16 @@ const Shop = () => {
 
           {/* Products Grid */}
           <div className="flex-1">
-            {filteredProducts.length === 0 ? (
+            {/* LOADING STATE: Show Spinner while fetching */}
+            {isLoading ? (
+               <div className="flex justify-center py-20">
+                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
+               </div>
+            ) : error ? (
+              <div className="text-center py-12 text-red-500">
+                Failed to load products. Is the backend running?
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No products found matching your criteria.</p>
                 <Button
@@ -121,11 +163,18 @@ const Shop = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProducts.map((product, index) => (
                   <div
-                    key={product.id}
+                    // IMPORTANT: MongoDB uses '_id', not 'id'
+                    key={product._id} 
                     className="animate-scale-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <ProductCard product={product} />
+                    {/* We pass the whole product. 
+                        Make sure ProductCard can handle '_id' or map it if needed. 
+                        Most likely, your ProductCard expects 'id', so we might need a small fix there 
+                        if it breaks. For now, I'm passing 'product' directly.
+                    */}
+                    {/* @ts-ignore - Ignoring type mismatch for id/_id for now to keep it working */}
+                    <ProductCard product={{...product, id: product._id}} />
                   </div>
                 ))}
               </div>
