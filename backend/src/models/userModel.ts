@@ -28,7 +28,7 @@ userSchema.methods.matchPassword = async function (enteredPassword: string) {
 };
 
 // Middleware to encrypt password before saving (FR-16)
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
     return;
   }
