@@ -1,35 +1,60 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Shield, Heart } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Shield, Heart, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query'; // Import Query Hook
+import api from '@/lib/api'; // Import API helper
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { products } from '@/lib/products';
 import { useCart } from '@/lib/cart';
+import { toast } from 'sonner';
 
-import productClassicCreamy from '@/assets/product-classic-creamy.jpg';
-import productCrunchy from '@/assets/product-crunchy.jpg';
-import productOrganic from '@/assets/product-organic.jpg';
-import productHoneyRoasted from '@/assets/product-honey-roasted.jpg';
-
-const imageMap: Record<string, string> = {
-  '/product-classic-creamy.jpg': productClassicCreamy,
-  '/product-crunchy.jpg': productCrunchy,
-  '/product-organic.jpg': productOrganic,
-  '/product-honey-roasted.jpg': productHoneyRoasted
-};
+// Define Interface matching your Database
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  description: string;
+  countInStock: number;
+  weight: string;
+  flavor: string;
+}
 
 const ProductDetail = () => {
   const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
-  const product = products.find(p => p.id === id);
+  // 1. FETCH PRODUCT DYNAMICALLY
+  const { data: product, isLoading, isError } = useQuery({
+    queryKey: ['product', id],
+    queryFn: async () => {
+      const { data } = await api.get<Product>(`/products/${id}`);
+      return data;
+    },
+    enabled: !!id, // Only run if ID is present
+  });
 
-  if (!product) {
+  // 2. LOADING STATE
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex justify-center items-center h-[60vh]">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 3. ERROR / NOT FOUND STATE
+  if (isError || !product) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -45,10 +70,24 @@ const ProductDetail = () => {
     );
   }
 
+  // Helper to handle adding to cart with correct data structure
   const handleAddToCart = () => {
-    addItem(product, quantity);
+    addItem({
+      id: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.imageUrl,
+      weight: product.weight || '200g',
+      category: product.category,
+      description: product.description,
+      inStock: product.countInStock > 0
+    }, quantity);
+    
+    toast.success(`Added ${quantity} x ${product.name} to cart`);
     setQuantity(1);
   };
+
+  const isOutOfStock = product.countInStock === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,20 +104,35 @@ const ProductDetail = () => {
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Product Image */}
-          <div className="bg-card rounded-2xl overflow-hidden shadow-lg">
+          <div className="bg-card rounded-2xl overflow-hidden shadow-lg relative group">
             <img
-              src={imageMap[product.image] || product.image}
+              src={product.imageUrl || '/placeholder.svg'}
               alt={product.name}
-              className="w-full aspect-square object-cover"
+              className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
             />
+            {isOutOfStock && (
+              <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                 <Badge variant="destructive" className="text-lg px-4 py-2">Out of Stock</Badge>
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <Badge variant="secondary" className="mb-2">
-                {product.category}
-              </Badge>
+              <div className="flex gap-2 mb-2">
+                <Badge variant="secondary">
+                  {product.category}
+                </Badge>
+                {product.flavor && (
+                  <Badge variant="outline">
+                    {product.flavor}
+                  </Badge>
+                )}
+              </div>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                 {product.name}
               </h1>
@@ -86,9 +140,9 @@ const ProductDetail = () => {
 
             <div className="flex items-baseline gap-4">
               <span className="text-4xl font-bold text-primary">
-                ${product.price.toFixed(2)}
+                LKR {product.price.toLocaleString()}
               </span>
-              <span className="text-muted-foreground">/ {product.weight}</span>
+              <span className="text-muted-foreground">/ {product.weight || '200g'}</span>
             </div>
 
             <p className="text-muted-foreground text-lg leading-relaxed">
@@ -105,7 +159,7 @@ const ProductDetail = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 1 || isOutOfStock}
                 >
                   <Minus className="w-4 h-4" />
                 </Button>
@@ -114,10 +168,18 @@ const ProductDetail = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setQuantity(quantity + 1)}
+                  disabled={isOutOfStock}
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
+              
+              {/* Stock Status Text */}
+              {isOutOfStock ? (
+                <span className="text-red-500 font-medium text-sm">Out of Stock</span>
+              ) : (
+                <span className="text-green-600 font-medium text-sm">{product.countInStock} Available</span>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -126,10 +188,10 @@ const ProductDetail = () => {
                 size="lg"
                 className="flex-1"
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={isOutOfStock}
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                Add to Cart
+                {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
               </Button>
               <Button variant="outline" size="lg">
                 <Heart className="w-5 h-5" />
@@ -140,11 +202,11 @@ const ProductDetail = () => {
             <div className="grid grid-cols-2 gap-4 pt-4">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Truck className="w-5 h-5 text-primary" />
-                <span>Free shipping over $50</span>
+                <span>Free shipping over LKR 5,000</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Shield className="w-5 h-5 text-primary" />
-                <span>30-day money back</span>
+                <span>Freshness Guaranteed</span>
               </div>
             </div>
           </div>
