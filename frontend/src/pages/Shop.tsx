@@ -1,18 +1,18 @@
 import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query'; // Import Query Hook
-import api from '@/lib/api'; // Import your API helper
+import { Search, SlidersHorizontal, Loader2, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
 import { ProductCard } from '@/components/ProductCard';
-import { categories } from '@/lib/products'; // Keep categories for the sidebar
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
-// Define what your Database Product looks like
+// --- INTERFACES ---
 interface Product {
   _id: string;
   name: string;
@@ -22,60 +22,116 @@ interface Product {
   description: string;
   category: string;
   countInStock: number;
+  weight?: string;
+}
+
+interface Attribute {
+  _id: string;
+  name: string;
 }
 
 const Shop = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  // --- STATE ---
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedFlavor, setSelectedFlavor] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. FETCH DATA: Get products from your Backend
-  const { data: products, isLoading, error } = useQuery({
+  // --- 1. FETCH DATA (Products, Categories, Flavors) ---
+  
+  const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: async () => {
-      const { data } = await api.get<Product[]>('/products');
-      return data;
-    },
+    queryFn: async () => (await api.get<Product[]>('/products')).data,
   });
 
-  // 2. FILTER DATA: Filter the LIVE data from the backend
+  const { data: categoriesData, isLoading: catLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => (await api.get<Attribute[]>('/attributes/categories')).data,
+  });
+
+  const { data: flavorsData, isLoading: flavLoading } = useQuery({
+    queryKey: ['flavors'],
+    queryFn: async () => (await api.get<Attribute[]>('/attributes/flavors')).data,
+  });
+
+  // --- 2. PREPARE FILTER LISTS ---
+  const categoriesList = useMemo(() => 
+    [{ _id: 'all-cat', name: 'All' }, ...(categoriesData || [])], 
+  [categoriesData]);
+
+  const flavorsList = useMemo(() => 
+    [{ _id: 'all-flav', name: 'All' }, ...(flavorsData || [])], 
+  [flavorsData]);
+
+  // --- 3. FILTER LOGIC (The Brain) ---
   const filteredProducts = useMemo(() => {
-    // If data hasn't loaded yet, return empty array
     if (!products) return [];
 
-    return products.filter((product: Product) => {
-      // Note: Make sure your Backend "category" matches these IDs (creamy, crunchy, etc.)
-      // Or you can filter by "flavor" if that matches better!
-      const matchesCategory = selectedCategory === 'all' || 
-                              product.category.toLowerCase() === selectedCategory || 
-                              product.flavor.toLowerCase() === selectedCategory;
+    return products.filter((product) => {
+      // 1. Check Category (Type)
+      const categoryMatch = selectedCategory === 'All' || 
+                            product.category === selectedCategory;
 
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      // 2. Check Flavor (Variant)
+      const flavorMatch = selectedFlavor === 'All' || 
+                          product.flavor === selectedFlavor;
 
-      return matchesCategory && matchesSearch;
+      // 3. Check Search Text
+      const searchMatch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return categoryMatch && flavorMatch && searchMatch;
     });
-  }, [selectedCategory, searchQuery, products]);
+  }, [selectedCategory, selectedFlavor, searchQuery, products]);
 
+  // --- 4. SIDEBAR COMPONENT ---
   const FilterSidebar = () => (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Category Section */}
       <div>
-        <h3 className="font-semibold mb-4 text-foreground">Categories</h3>
-        <div className="space-y-2">
-          {categories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={cn(
-                'w-full text-left px-4 py-2 rounded-lg text-sm transition-colors',
-                selectedCategory === category.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
+        <h3 className="font-semibold mb-3 text-foreground">Category</h3>
+        {catLoading ? <div className="text-xs text-muted-foreground">Loading...</div> : (
+          <div className="space-y-1">
+            {categoriesList.map((c) => (
+              <button
+                key={c._id}
+                onClick={() => setSelectedCategory(c.name)}
+                className={cn(
+                  'w-full text-left px-3 py-2 rounded-md text-sm transition-colors',
+                  selectedCategory === c.name
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground hover:bg-muted'
+                )}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Flavor Section */}
+      <div>
+        <h3 className="font-semibold mb-3 text-foreground">Flavor</h3>
+        {flavLoading ? <div className="text-xs text-muted-foreground">Loading...</div> : (
+          <div className="space-y-1">
+            {flavorsList.map((f) => (
+              <button
+                key={f._id}
+                onClick={() => setSelectedFlavor(f.name)}
+                className={cn(
+                  'w-full text-left px-3 py-2 rounded-md text-sm transition-colors',
+                  selectedFlavor === f.name
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground hover:bg-muted'
+                )}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -87,14 +143,13 @@ const Shop = () => {
       <main className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground">Our Products</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground">Our Collection</h1>
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-            Explore our complete range of premium peanut butter, from classic creamy 
-            to unique flavored varieties.
+            Browse our premium selection of peanut butters and cookies.
           </p>
         </div>
 
-        {/* Search & Filter Bar */}
+        {/* Top Bar: Search & Mobile Filter */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -107,7 +162,6 @@ const Shop = () => {
             />
           </div>
           
-          {/* Mobile Filter Button */}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" className="lg:hidden">
@@ -115,7 +169,7 @@ const Shop = () => {
                 Filters
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="bg-card">
+            <SheetContent side="left" className="bg-card w-[300px]">
               <SheetHeader>
                 <SheetTitle>Filters</SheetTitle>
               </SheetHeader>
@@ -129,52 +183,64 @@ const Shop = () => {
         <div className="flex gap-8">
           {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-24 bg-card rounded-xl p-6 shadow-md border border-border">
+            <div className="sticky top-24 bg-card rounded-xl p-6 shadow-sm border border-border">
               <FilterSidebar />
+              {(selectedCategory !== 'All' || selectedFlavor !== 'All') && (
+                <Button 
+                  variant="ghost" 
+                  className="w-full mt-6 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setSelectedFlavor('All');
+                    setSearchQuery('');
+                  }}
+                >
+                  <X className="w-4 h-4 mr-2" /> Clear All Filters
+                </Button>
+              )}
             </div>
           </aside>
 
           {/* Products Grid */}
           <div className="flex-1">
-            {/* LOADING STATE: Show Spinner while fetching */}
-            {isLoading ? (
+            {productsLoading ? (
                <div className="flex justify-center py-20">
                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
                </div>
-            ) : error ? (
-              <div className="text-center py-12 text-red-500">
-                Failed to load products. Is the backend running?
-              </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No products found matching your criteria.</p>
+              <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
+                <p className="text-muted-foreground">No products found matching these filters.</p>
                 <Button
-                  variant="outline"
-                  className="mt-4"
+                  variant="link"
+                  className="mt-2"
                   onClick={() => {
+                    setSelectedCategory('All');
+                    setSelectedFlavor('All');
                     setSearchQuery('');
-                    setSelectedCategory('all');
                   }}
                 >
-                  Clear Filters
+                  Clear all filters
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProducts.map((product, index) => (
                   <div
-                    // IMPORTANT: MongoDB uses '_id', not 'id'
                     key={product._id} 
                     className="animate-scale-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* We pass the whole product. 
-                        Make sure ProductCard can handle '_id' or map it if needed. 
-                        Most likely, your ProductCard expects 'id', so we might need a small fix there 
-                        if it breaks. For now, I'm passing 'product' directly.
-                    */}
-                    {/* @ts-ignore - Ignoring type mismatch for id/_id for now to keep it working */}
-                    <ProductCard product={{...product, id: product._id}} />
+                    <ProductCard product={{
+                        id: product._id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.imageUrl,
+                        category: product.category,
+                        description: product.description,
+                        inStock: product.countInStock > 0,
+                        weight: product.weight, 
+                        flavor: product.flavor
+                    }} />
                   </div>
                 ))}
               </div>

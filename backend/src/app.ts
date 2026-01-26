@@ -1,7 +1,10 @@
+import path from 'path';
 import express from "express";
 import cors from "cors";
 import productRoutes from './routes/productRoutes';
 import userRoutes from './routes/userRoutes';
+import uploadRoutes from './routes/uploadRoutes';
+import attributeRoutes from './routes/attributeRoutes';
 
 const app = express();
 
@@ -9,10 +12,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// app.get("/", (_req, res) => res.send("Backend is working!"));
-
+// Routes
 app.use('/api/products', productRoutes);
-app.use('/api/users', userRoutes); 
+app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/attributes', attributeRoutes);
+
+
+const currentDir = path.resolve(); 
+app.use('/uploads', express.static(path.join(currentDir, '/uploads')));
 
 app.get('/', (req, res) => {
   res.send('API is running...');

@@ -40,14 +40,20 @@ export const deleteProduct = asyncHandler(async (req: Request, res: Response) =>
   }
 });
 
-
-
 // @desc    Update a product
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 export const updateProduct = asyncHandler(async (req: Request, res: Response) => {
-  // We get these new values from the form data
-  const { name, price, description, imageUrl, flavor, countInStock } = req.body;
+  const { 
+    name, 
+    price, 
+    description, 
+    imageUrl, 
+    flavor, 
+    category, 
+    countInStock, 
+    weight 
+  } = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -55,9 +61,11 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
     product.name = name;
     product.price = price;
     product.description = description;
-    product.imageUrl = imageUrl; // Updated to match your model
-    product.flavor = flavor;     // Updated to match your model
+    product.imageUrl = imageUrl;
+    product.flavor = flavor;
+    product.category = category; // Fix: Update category
     product.countInStock = countInStock;
+    product.weight = weight;     // Fix: Update weight
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);
@@ -71,17 +79,27 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
 // @route   POST /api/products
 // @access  Private/Admin
 export const createProduct = asyncHandler(async (req: any, res: Response) => {
-  const { name, price, description, imageUrl, flavor, category, countInStock } = req.body;
+  const { 
+    name, 
+    price, 
+    description, 
+    imageUrl, 
+    flavor, 
+    category, 
+    countInStock, 
+    weight 
+  } = req.body;
 
   const product = new Product({
-    name: name,
-    price: price,
+    name,
+    price,
     user: req.user._id,
-    imageUrl: imageUrl, 
-    flavor: flavor,
-    category: category,
-    countInStock: countInStock,
-    description: description,
+    imageUrl, 
+    flavor,
+    category,
+    countInStock,
+    description,
+    weight, // Fix: Save weight
   });
 
   const createdProduct = await product.save();

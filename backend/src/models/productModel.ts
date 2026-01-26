@@ -5,6 +5,8 @@ export interface IProduct extends Document {
   name: string;
   imageUrl: string;
   flavor: string;
+  category: string; 
+  weight: string; 
   description: string;
   price: number;
   countInStock: number;
@@ -12,18 +14,20 @@ export interface IProduct extends Document {
 
 const productSchema: Schema = new Schema(
   {
-    // Link to the Admin who created the product [cite: 193]
+    // Link to the Admin who created the product
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User',
     },
-    name: { type: String, required: true }, // Matches Product Class [cite: 186]
-    imageUrl: { type: String, required: true }, // Matches Product Class 'imageUrl' [cite: 186]
-    flavor: { type: String, required: true }, // Specific to Peanut Butter store requirements
-    description: { type: String, required: true }, // Matches Product Class [cite: 186]
-    price: { type: Number, required: true, default: 0 }, // Matches Product Class [cite: 186]
-    countInStock: { type: Number, required: true, default: 0 }, // Matches Product Class 'stock' [cite: 186]
+    name: { type: String, required: true },
+    imageUrl: { type: String, required: true },
+    flavor: { type: String, required: true }, 
+    category: { type: String, required: true }, // Crucial for your Shop filters
+    weight: { type: String, required: true, default: '200g' }, // Crucial for display
+    description: { type: String, required: true },
+    price: { type: Number, required: true, default: 0 },
+    countInStock: { type: Number, required: true, default: 0 },
   },
   {
     timestamps: true,

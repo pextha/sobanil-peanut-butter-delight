@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import api from '@/lib/api'; // Your API helper
+import { ArrowLeft, Save, Loader2, Upload } from 'lucide-react';
+import api from '@/lib/api';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { CreatableSelect } from '@/components/CreatableSelect'; // <--- IMPORT THIS
 import { toast } from 'sonner';
 
 const ProductEditScreen = () => {
@@ -16,16 +17,19 @@ const ProductEditScreen = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // --- FORM STATE ---
   const [name, setName] = useState('');
   const [price, setPrice] = useState(0);
   const [image, setImage] = useState('');
-  const [flavor, setFlavor] = useState('');
-  const [category, setCategory] = useState('');
   const [countInStock, setCountInStock] = useState(0);
   const [description, setDescription] = useState('');
+  const [uploading, setUploading] = useState(false);
 
-  // --- 1. FETCH PRODUCT DATA ---
+  // --- DROPDOWN STATES ---
+  const [flavor, setFlavor] = useState('');
+  const [category, setCategory] = useState('');
+  const [weight, setWeight] = useState(''); // Added Weight
+
+  // --- FETCH DATA ---
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
@@ -34,38 +38,60 @@ const ProductEditScreen = () => {
     },
   });
 
-  // --- 2. FILL FORM WHEN DATA ARRIVES ---
   useEffect(() => {
     if (product) {
       setName(product.name);
       setPrice(product.price);
-      setImage(product.imageUrl); // Note: Backend uses 'imageUrl'
-      setFlavor(product.flavor);
-      setCategory(product.category);
+      setImage(product.imageUrl);
       setCountInStock(product.countInStock);
       setDescription(product.description);
+      
+      // Load Dropdown Values
+      setFlavor(product.flavor || '');
+      setCategory(product.category || '');
+      setWeight(product.weight || ''); 
     }
   }, [product]);
 
-  // --- 3. UPDATE FUNCTION (PUT) ---
+  // --- FILE UPLOAD HANDLER ---
+  const uploadFileHandler = async (e: any) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    setUploading(true);
+
+    try {
+      const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+      const { data } = await api.post('/upload', formData, config);
+      setImage(data);
+      setUploading(false);
+      toast.success('Image uploaded successfully!');
+    } catch (error) {
+      console.error(error);
+      setUploading(false);
+      toast.error('Image upload failed');
+    }
+  };
+
+  // --- UPDATE MUTATION ---
   const updateMutation = useMutation({
     mutationFn: async (e: React.FormEvent) => {
       e.preventDefault();
-      // Send updated data to backend
       await api.put(`/products/${id}`, {
         name,
         price,
         imageUrl: image,
         flavor,
         category,
+        weight, // Include weight
         description,
         countInStock,
       });
     },
     onSuccess: () => {
       toast.success('Product Updated Successfully');
-      queryClient.invalidateQueries({ queryKey: ['products'] }); // Refresh list
-      navigate('/admin'); // Go back to dashboard
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      navigate('/admin');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Update failed');
@@ -90,101 +116,90 @@ const ProductEditScreen = () => {
         ) : (
           <form onSubmit={updateMutation.mutate} className="space-y-6 border p-6 rounded-lg bg-card shadow-sm">
             
-            {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Product Name</Label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                placeholder="e.g. Sobanil Classic"
-                required 
-              />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
 
-            {/* Price & Stock Row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price">Price (Rs)</Label>
-                <Input 
-                  id="price" 
-                  type="number" 
-                  value={price} 
-                  onChange={(e) => setPrice(Number(e.target.value))} 
-                  required 
-                />
+                <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">Count In Stock</Label>
-                <Input 
-                  id="stock" 
-                  type="number" 
-                  value={countInStock} 
-                  onChange={(e) => setCountInStock(Number(e.target.value))} 
-                  required 
-                />
+                <Input id="stock" type="number" value={countInStock} onChange={(e) => setCountInStock(Number(e.target.value))} required />
               </div>
             </div>
 
-            {/* Image URL */}
+            {/* --- IMAGE UPLOAD SECTION --- */}
             <div className="space-y-2">
-              <Label htmlFor="image">Image URL</Label>
-              <Input 
-                id="image" 
-                value={image} 
-                onChange={(e) => setImage(e.target.value)} 
-                placeholder="/images/sample.jpg" 
-              />
-              <p className="text-xs text-muted-foreground">
-                Tip: Put images in your 'public/images' folder or use an external URL.
-              </p>
+              <Label htmlFor="image">Product Image</Label>
+              <div className="flex gap-2 items-center">
+                <Input 
+                  id="image" 
+                  value={image} 
+                  onChange={(e) => setImage(e.target.value)} 
+                  placeholder="Upload an image" 
+                  readOnly 
+                  className="bg-muted"
+                />
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="image-file"
+                    onChange={uploadFileHandler}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <Button type="button" variant="outline" size="icon" disabled={uploading}>
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            {/* Flavor & Category Row */}
+            {/* --- SMART DROPDOWNS ROW 1 --- */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="flavor">Flavor</Label>
-                <Input 
-                  id="flavor" 
+               <CreatableSelect 
+                  label="Flavor" 
                   value={flavor} 
-                  onChange={(e) => setFlavor(e.target.value)} 
-                  placeholder="e.g. Creamy" 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input 
-                  id="category" 
+                  onChange={setFlavor} 
+                  endpoint="flavors" 
+                  placeholder="Select Flavor"
+               />
+               <CreatableSelect 
+                  label="Category" 
                   value={category} 
-                  onChange={(e) => setCategory(e.target.value)} 
-                />
-              </div>
+                  onChange={setCategory} 
+                  endpoint="categories" 
+                  placeholder="Select Category"
+               />
             </div>
 
-            {/* Description */}
+            {/* --- SMART DROPDOWNS ROW 2 --- */}
+            <div className="grid grid-cols-2 gap-4">
+               <CreatableSelect 
+                  label="Weight" 
+                  value={weight} 
+                  onChange={setWeight} 
+                  endpoint="weights" 
+                  placeholder="Select Weight"
+               />
+               <div></div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description" 
-                value={description} 
-                onChange={(e) => setDescription(e.target.value)} 
-                rows={4} 
-              />
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} required />
             </div>
 
-            {/* Submit Button */}
-            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
+            <Button type="submit" className="w-full" disabled={updateMutation.isPending || uploading}>
+              {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Update Product
             </Button>
           </form>
         )}
       </main>
-
       <Footer />
     </div>
   );
