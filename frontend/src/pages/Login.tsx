@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query'; // NEW: For API calls
-import api from '@/lib/api'; // NEW: Your API helper
-import { toast } from 'sonner'; // NEW: Alerts
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
@@ -15,6 +15,24 @@ import { Leaf, Loader2 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- 1. SMART REDIRECT ON LOAD ---
+  // If user is already logged in, send them to the right place immediately
+  useEffect(() => {
+    const userInfoString = localStorage.getItem('userInfo');
+    
+    if (userInfoString) {
+      const userInfo = JSON.parse(userInfoString);
+      
+      // CHECK: Is it an Admin?
+      if (userInfo.isAdmin) {
+        navigate('/admin'); // Admins go to Dashboard
+      } else {
+        navigate('/profile'); // Customers go to Profile
+      }
+    }
+  }, [navigate]);
 
   // --- LOGIN STATE ---
   const [loginEmail, setLoginEmail] = useState('');
@@ -27,11 +45,13 @@ const Login = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
 
-  // --- 1. LOGIN ACTION ---
+  // Default redirect for customers (unless they came from checkout)
+  const from = location.state?.from?.pathname || '/profile';
+
+  // --- 2. LOGIN ACTION ---
   const loginMutation = useMutation({
     mutationFn: async (e: React.FormEvent) => {
       e.preventDefault();
-      // Send email/pass to backend
       const { data } = await api.post('/users/login', {
         email: loginEmail,
         password: loginPassword,
@@ -39,15 +59,14 @@ const Login = () => {
       return data;
     },
     onSuccess: (data) => {
-      // Save Token to Browser
       localStorage.setItem('userInfo', JSON.stringify(data));
       toast.success('Welcome back!');
       
-      // Smart Redirect: Admin -> Dashboard, User -> Home
+      // SMART REDIRECT AFTER LOGIN
       if (data.isAdmin) {
         navigate('/admin');
       } else {
-        navigate('/');
+        navigate(from);
       }
     },
     onError: (err: any) => {
@@ -55,16 +74,12 @@ const Login = () => {
     },
   });
 
-  // --- 2. REGISTER ACTION ---
+  // --- 3. REGISTER ACTION ---
   const registerMutation = useMutation({
     mutationFn: async (e: React.FormEvent) => {
       e.preventDefault();
-      
-      if (regPassword !== regConfirm) {
-        throw new Error('Passwords do not match');
-      }
+      if (regPassword !== regConfirm) throw new Error('Passwords do not match');
 
-      // Send data to backend
       const { data } = await api.post('/users', {
         name: `${regFirstName} ${regLastName}`,
         email: regEmail,
@@ -73,13 +88,13 @@ const Login = () => {
       return data;
     },
     onSuccess: (data) => {
-      // Login immediately after registering
       localStorage.setItem('userInfo', JSON.stringify(data));
       toast.success('Account created successfully!');
-      navigate('/');
+      
+      // New users are never Admins, so go to Profile
+      navigate('/profile');
     },
     onError: (err: any) => {
-      // Check if it's a "User already exists" error or password mismatch
       const msg = err.message === 'Passwords do not match' 
         ? err.message 
         : (err.response?.data?.message || 'Registration failed');
@@ -141,18 +156,10 @@ const Login = () => {
                       <input type="checkbox" className="rounded border-input" />
                       <span className="text-muted-foreground">Remember me</span>
                     </label>
-                    <a href="#" className="text-primary hover:underline">
-                      Forgot password?
-                    </a>
+                    <a href="#" className="text-primary hover:underline">Forgot password?</a>
                   </div>
                   <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                    {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
+                    {loginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign In'}
                   </Button>
                 </form>
               </TabsContent>
@@ -221,28 +228,11 @@ const Login = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                     {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
+                      {registerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
-
-            <p className="text-center text-sm text-muted-foreground mt-6">
-              By continuing, you agree to our{' '}
-              <Link to="/terms" className="text-primary hover:underline">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy" className="text-primary hover:underline">
-                Privacy Policy
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </main>

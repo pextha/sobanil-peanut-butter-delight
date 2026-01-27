@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // NEW: Query Tools
-import api from '@/lib/api'; // NEW: API Helper
-import { toast } from 'sonner'; // NEW: Notifications
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; 
+import api from '@/lib/api'; 
+import { toast } from 'sonner'; 
 import {
   LayoutDashboard,
   Package,
   ShoppingCart,
   Users,
+  User, // <--- ADDED IMPORT
   Settings,
   Leaf,
   Menu,
@@ -208,8 +209,17 @@ const AdminDashboard = () => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
-            <Button variant="outline" className="w-full" asChild>
+          <div className="p-4 border-t border-border space-y-2">
+            {/* NEW: Back to Profile Button */}
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <Link to="/profile">
+                <User className="w-4 h-4 mr-2" />
+                My Profile
+              </Link>
+            </Button>
+
+            {/* Back to Store Button */}
+            <Button variant="outline" className="w-full justify-start" asChild>
               <Link to="/">
                 <Settings className="w-4 h-4 mr-2" />
                 Back to Store
@@ -315,7 +325,7 @@ const AdminDashboard = () => {
               <Card className="border-0 shadow-md">
                 <CardContent className="p-0">
                   {isLoading ? (
-                     <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>
+                      <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>
                   ) : (
                   <Table>
                     <TableHeader>

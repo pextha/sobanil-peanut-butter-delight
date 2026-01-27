@@ -5,6 +5,9 @@ import {
   deleteProduct,
   updateProduct,
   createProduct,
+  // IMPORT NEW CONTROLLERS
+  createProductReview,
+  getTopProducts,
 } from '../controllers/productController';
 import { protect, admin } from '../middleware/authMiddleware';
 
@@ -17,7 +20,15 @@ router.route('/')
   .get(getProducts)
   .post(protect, admin, createProduct);
 
-// 2. The ID route "/:id"
+// 2. The Top Products Route "/top"
+// IMPORTANT: This MUST go before the /:id route!
+router.route('/top').get(getTopProducts);
+
+// 3. The Reviews Route "/:id/reviews"
+// POST: Logged in users can write a review
+router.route('/:id/reviews').post(protect, createProductReview);
+
+// 4. The ID route "/:id"
 // GET: Everyone can see a single product
 // DELETE/PUT: Only Admins can delete or edit
 router.route('/:id')
@@ -25,4 +36,4 @@ router.route('/:id')
   .delete(protect, admin, deleteProduct)
   .put(protect, admin, updateProduct);
 
-export default router;  
+export default router;

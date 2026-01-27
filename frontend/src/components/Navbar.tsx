@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, User, ShoppingCart, Menu, X, Leaf } from 'lucide-react';
+import { Search, User, ShoppingCart, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/lib/cart';
@@ -72,9 +72,10 @@ export function Navbar() {
             <Search className="w-5 h-5" />
           </Button>
 
-          {/* User */}
+          {/* User Profile Link - UPDATED */}
           <Button variant="ghost" size="icon" className="hover:bg-muted" asChild>
-            <Link to="/login">
+            {/* FIX: Changed from /login to /profile */}
+            <Link to="/profile">
               <User className="w-5 h-5" />
             </Link>
           </Button>
