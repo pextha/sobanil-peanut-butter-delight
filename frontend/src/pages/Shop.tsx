@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, Loader2, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -32,12 +33,28 @@ interface Attribute {
 
 const Shop = () => {
   // --- STATE ---
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedFlavor, setSelectedFlavor] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+
+  // Keep URL in sync with search query (optional, but good for shareable links)
+  useEffect(() => {
+    if (searchQuery) {
+      setSearchParams(prev => {
+        prev.set('search', searchQuery);
+        return prev;
+      }, { replace: true });
+    } else {
+      setSearchParams(prev => {
+        prev.delete('search');
+        return prev;
+      }, { replace: true });
+    }
+  }, [searchQuery, setSearchParams]);
 
   // --- 1. FETCH DATA (Products, Categories, Flavors) ---
-  
+
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
     queryFn: async () => (await api.get<Product[]>('/products')).data,
@@ -54,13 +71,13 @@ const Shop = () => {
   });
 
   // --- 2. PREPARE FILTER LISTS ---
-  const categoriesList = useMemo(() => 
-    [{ _id: 'all-cat', name: 'All' }, ...(categoriesData || [])], 
-  [categoriesData]);
+  const categoriesList = useMemo(() =>
+    [{ _id: 'all-cat', name: 'All' }, ...(categoriesData || [])],
+    [categoriesData]);
 
-  const flavorsList = useMemo(() => 
-    [{ _id: 'all-flav', name: 'All' }, ...(flavorsData || [])], 
-  [flavorsData]);
+  const flavorsList = useMemo(() =>
+    [{ _id: 'all-flav', name: 'All' }, ...(flavorsData || [])],
+    [flavorsData]);
 
   // --- 3. FILTER LOGIC (The Brain) ---
   const filteredProducts = useMemo(() => {
@@ -68,16 +85,16 @@ const Shop = () => {
 
     return products.filter((product) => {
       // 1. Check Category (Type)
-      const categoryMatch = selectedCategory === 'All' || 
-                            product.category === selectedCategory;
+      const categoryMatch = selectedCategory === 'All' ||
+        product.category === selectedCategory;
 
       // 2. Check Flavor (Variant)
-      const flavorMatch = selectedFlavor === 'All' || 
-                          product.flavor === selectedFlavor;
+      const flavorMatch = selectedFlavor === 'All' ||
+        product.flavor === selectedFlavor;
 
       // 3. Check Search Text
       const searchMatch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
 
       return categoryMatch && flavorMatch && searchMatch;
     });
@@ -139,7 +156,7 @@ const Shop = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -161,7 +178,7 @@ const Shop = () => {
               className="pl-10"
             />
           </div>
-          
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" className="lg:hidden">
@@ -186,8 +203,8 @@ const Shop = () => {
             <div className="sticky top-24 bg-card rounded-xl p-6 shadow-sm border border-border">
               <FilterSidebar />
               {(selectedCategory !== 'All' || selectedFlavor !== 'All') && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="w-full mt-6 text-red-500 hover:text-red-600 hover:bg-red-50"
                   onClick={() => {
                     setSelectedCategory('All');
@@ -204,9 +221,9 @@ const Shop = () => {
           {/* Products Grid */}
           <div className="flex-1">
             {productsLoading ? (
-               <div className="flex justify-center py-20">
-                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-               </div>
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              </div>
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
                 <p className="text-muted-foreground">No products found matching these filters.</p>
@@ -226,20 +243,20 @@ const Shop = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProducts.map((product, index) => (
                   <div
-                    key={product._id} 
+                    key={product._id}
                     className="animate-scale-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <ProductCard product={{
-                        id: product._id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.imageUrl,
-                        category: product.category,
-                        description: product.description,
-                        inStock: product.countInStock > 0,
-                        weight: product.weight, 
-                        flavor: product.flavor
+                      id: product._id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.imageUrl,
+                      category: product.category,
+                      description: product.description,
+                      inStock: product.countInStock > 0,
+                      weight: product.weight,
+                      flavor: product.flavor
                     }} />
                   </div>
                 ))}
