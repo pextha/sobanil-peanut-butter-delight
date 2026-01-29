@@ -12,19 +12,21 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Leaf, Loader2 } from 'lucide-react';
+import { useCart } from '@/lib/cart';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { fetchCart } = useCart();
 
   // --- 1. SMART REDIRECT ON LOAD ---
   // If user is already logged in, send them to the right place immediately
   useEffect(() => {
     const userInfoString = localStorage.getItem('userInfo');
-    
+
     if (userInfoString) {
       const userInfo = JSON.parse(userInfoString);
-      
+
       // CHECK: Is it an Admin?
       if (userInfo.isAdmin) {
         navigate('/admin'); // Admins go to Dashboard
@@ -61,7 +63,8 @@ const Login = () => {
     onSuccess: (data) => {
       localStorage.setItem('userInfo', JSON.stringify(data));
       toast.success('Welcome back!');
-      
+      fetchCart();
+
       // SMART REDIRECT AFTER LOGIN
       if (data.isAdmin) {
         navigate('/admin');
@@ -90,13 +93,14 @@ const Login = () => {
     onSuccess: (data) => {
       localStorage.setItem('userInfo', JSON.stringify(data));
       toast.success('Account created successfully!');
-      
+      fetchCart();
+
       // New users are never Admins, so go to Profile
       navigate('/profile');
     },
     onError: (err: any) => {
-      const msg = err.message === 'Passwords do not match' 
-        ? err.message 
+      const msg = err.message === 'Passwords do not match'
+        ? err.message
         : (err.response?.data?.message || 'Registration failed');
       toast.error(msg);
     },
@@ -105,7 +109,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-20 flex items-center justify-center">
         <Card className="w-full max-w-md border-0 shadow-xl">
           <CardHeader className="text-center pb-4">
@@ -228,7 +232,7 @@ const Login = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                      {registerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
+                    {registerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
                   </Button>
                 </form>
               </TabsContent>

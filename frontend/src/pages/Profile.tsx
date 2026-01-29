@@ -12,14 +12,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Package, 
-  LogOut, 
-  Loader2, 
-  Save, 
-  LayoutDashboard, 
-  Settings, 
+import {
+  User,
+  Package,
+  LogOut,
+  Loader2,
+  Save,
+  LayoutDashboard,
+  Settings,
   ShoppingBag,
   Eye,
   CheckCircle2,
@@ -30,6 +30,7 @@ import {
   Plus      // NEW IMPORT
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/lib/cart';
 
 // --- INTERFACES ---
 interface UserProfile {
@@ -54,7 +55,7 @@ type TabType = 'orders' | 'settings' | 'addresses' | 'wishlist';
 const Profile = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
-  
+
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -108,8 +109,11 @@ const Profile = () => {
     },
   });
 
+  const { clearCart } = useCart();
+
   const handleLogout = () => {
     localStorage.removeItem('userInfo');
+    clearCart(true); // Clear local cart state only
     toast.info('Logged out successfully');
     navigate('/login');
   };
@@ -131,10 +135,10 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-12">
         <div className="grid lg:grid-cols-4 gap-8">
-          
+
           {/* --- SIDEBAR --- */}
           <div className="lg:col-span-1">
             <Card className="border-0 shadow-lg sticky top-24">
@@ -154,7 +158,7 @@ const Profile = () => {
 
                 <nav className="space-y-2">
                   {user?.isAdmin && (
-                    <button 
+                    <button
                       onClick={() => navigate('/admin')}
                       className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors font-medium mb-2"
                     >
@@ -163,12 +167,12 @@ const Profile = () => {
                     </button>
                   )}
 
-                  <button 
+                  <button
                     onClick={() => setActiveTab('orders')}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors font-medium",
-                      activeTab === 'orders' 
-                        ? "bg-primary text-primary-foreground shadow-sm" 
+                      activeTab === 'orders'
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
@@ -177,12 +181,12 @@ const Profile = () => {
                   </button>
 
                   {/* NEW: Addresses Tab */}
-                  <button 
+                  <button
                     onClick={() => setActiveTab('addresses')}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors font-medium",
-                      activeTab === 'addresses' 
-                        ? "bg-primary text-primary-foreground shadow-sm" 
+                      activeTab === 'addresses'
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
@@ -191,12 +195,12 @@ const Profile = () => {
                   </button>
 
                   {/* NEW: Wishlist Tab */}
-                  <button 
+                  <button
                     onClick={() => setActiveTab('wishlist')}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors font-medium",
-                      activeTab === 'wishlist' 
-                        ? "bg-primary text-primary-foreground shadow-sm" 
+                      activeTab === 'wishlist'
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
@@ -204,12 +208,12 @@ const Profile = () => {
                     <span>Wishlist</span>
                   </button>
 
-                  <button 
+                  <button
                     onClick={() => setActiveTab('settings')}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors font-medium",
-                      activeTab === 'settings' 
-                        ? "bg-primary text-primary-foreground shadow-sm" 
+                      activeTab === 'settings'
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
@@ -218,8 +222,8 @@ const Profile = () => {
                   </button>
 
                   <Separator className="my-2" />
-                  
-                  <button 
+
+                  <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors font-medium"
                   >
@@ -233,7 +237,7 @@ const Profile = () => {
 
           {/* --- MAIN CONTENT --- */}
           <div className="lg:col-span-3 space-y-6">
-            
+
             {/* VIEW 1: MY ORDERS */}
             {activeTab === 'orders' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -263,7 +267,7 @@ const Profile = () => {
                       const status = getOrderStatus(order);
                       const StatusIcon = status.icon;
                       return (
-                        <Card 
+                        <Card
                           key={order._id}
                           className="border-0 shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden"
                           style={{ animationDelay: `${index * 100}ms` }}
@@ -407,10 +411,10 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="pt-4">
-                        <Button 
-                          type="submit" 
-                          size="lg" 
-                          className="w-full sm:w-auto min-w-[150px]" 
+                        <Button
+                          type="submit"
+                          size="lg"
+                          className="w-full sm:w-auto min-w-[150px]"
                           disabled={updateProfileMutation.isPending}
                         >
                           {updateProfileMutation.isPending ? (
