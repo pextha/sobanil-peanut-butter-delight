@@ -1,10 +1,14 @@
-import { ShoppingCart, Eye } from 'lucide-react';
+import { ShoppingCart, Eye, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useCart } from '@/lib/cart'; 
+import { useCart } from '@/lib/cart';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import api from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export interface ProductCardProps {
   product: {
@@ -22,6 +26,65 @@ export interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // Check auth
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+
+  // Fetch user profile to get wishlist
+  const { data: userProfile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => (await api.get('/users/profile')).data,
+    enabled: !!userInfo, // Only fetch if logged in
+    retry: false
+  });
+
+  const isInWishlist = useMemo(() => {
+    if (!userProfile?.wishlist) return false;
+    // Wishlist can be array of strings (IDs) or objects (populated). 
+    // We check both cases safely.
+    return userProfile.wishlist.some((item: any) =>
+      (typeof item === 'string' ? item : item._id) === product.id
+    );
+  }, [userProfile, product.id]);
+
+  const addToWishlistMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/users/wishlist', { productId: product.id });
+    },
+    onSuccess: () => {
+      toast.success('Added to wishlist');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to add to wishlist')
+  });
+
+  const removeFromWishlistMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/users/wishlist/${product.id}`);
+    },
+    onSuccess: () => {
+      toast.success('Removed from wishlist');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error('Failed to remove from wishlist')
+  });
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!userInfo) {
+      toast.error('Please login to use wishlist');
+      // navigate('/login'); // Optional: redirect
+      return;
+    }
+
+    if (isInWishlist) {
+      removeFromWishlistMutation.mutate();
+    } else {
+      addToWishlistMutation.mutate();
+    }
+  };
 
   // Safety checks
   const safeCategory = product.category || 'Standard';
@@ -39,7 +102,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     addItem({
       id: product.id,
       name: product.name,
@@ -50,7 +113,7 @@ export function ProductCard({ product }: ProductCardProps) {
       description: product.description || '',
       inStock: product.inStock !== false
     });
-    
+
     toast.success(`Added ${product.name} to cart`);
   };
 
@@ -65,9 +128,9 @@ export function ProductCard({ product }: ProductCardProps) {
             (e.target as HTMLImageElement).src = '/placeholder.svg';
           }}
         />
-        
+
         {/* --- LEFT SIDE: CATEGORY (Smaller) --- */}
-        <Badge 
+        <Badge
           className={`absolute top-2 left-2 shadow-sm text-[10px] px-2 h-5 flex items-center justify-center pointer-events-none ${badgeColor}`}
         >
           {safeCategory}
@@ -75,7 +138,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* --- RIGHT SIDE: FLAVOR (Smaller) --- */}
         {safeFlavor && (
-          <Badge 
+          <Badge
             variant="secondary"
             className="absolute top-2 right-2 shadow-sm bg-black/70 text-white hover:bg-black/80 backdrop-blur-sm text-[10px] px-2 h-5 flex items-center justify-center pointer-events-none"
           >
@@ -99,13 +162,23 @@ export function ProductCard({ product }: ProductCardProps) {
             disabled={product.inStock === false}
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
-            Add to Cart
+            Add
           </Button>
-          
+
+          {/* Wishlist Button */}
           <Button
             variant="secondary"
             size="sm"
-            className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75"
+            className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-50"
+            onClick={handleWishlistClick}
+          >
+            <Heart className={cn("w-4 h-4", isInWishlist && "fill-red-500 text-red-500")} />
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-100"
             asChild
           >
             <Link to={`/product/${product.id}`}>

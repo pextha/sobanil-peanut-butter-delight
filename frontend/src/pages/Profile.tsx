@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Navbar } from '@/components/Navbar';
@@ -9,9 +9,18 @@ import { CartDrawer } from '@/components/CartDrawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog';
 import {
   User,
   Package,
@@ -24,20 +33,36 @@ import {
   Eye,
   CheckCircle2,
   Clock,
-  Truck,
-  MapPin,   // NEW IMPORT
-  Heart,    // NEW IMPORT
-  Plus      // NEW IMPORT
+  MapPin,
+  Plus,
+  Trash2,
+  Star,
+  Heart,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/lib/cart';
+import { ProductCard } from '@/components/ProductCard';
+
 
 // --- INTERFACES ---
+interface Address {
+  _id: string;
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 interface UserProfile {
   _id: string;
   name: string;
   email: string;
   isAdmin: boolean;
+  addresses: Address[];
 }
 
 interface Order {
@@ -54,6 +79,7 @@ type TabType = 'orders' | 'settings' | 'addresses' | 'wishlist';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
   // Form State
@@ -61,6 +87,18 @@ const Profile = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Address State
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    country: '',
+    isDefault: false
+  });
 
   // 1. CHECK AUTH
   useEffect(() => {
@@ -77,6 +115,12 @@ const Profile = () => {
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ['myOrders'],
     queryFn: async () => (await api.get<Order[]>('/orders/myorders')).data,
+  });
+
+  const { data: wishlist, isLoading: wishlistLoading } = useQuery({
+    queryKey: ['wishlist'],
+    queryFn: async () => (await api.get<any[]>('/users/wishlist')).data,
+    enabled: activeTab === 'wishlist'
   });
 
   useEffect(() => {
@@ -103,10 +147,48 @@ const Profile = () => {
       toast.success('Profile updated successfully');
       setPassword('');
       setConfirmPassword('');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || err.message || 'Update failed');
     },
+  });
+
+  // 4. ADDRESS ACTIONS
+  const addAddressMutation = useMutation({
+    mutationFn: async (e: React.FormEvent) => {
+      e.preventDefault();
+      await api.post('/users/profile/address', addressForm);
+    },
+    onSuccess: () => {
+      toast.success('Address added successfully');
+      setIsAddressDialogOpen(false);
+      setAddressForm({ name: '', phone: '', address: '', city: '', postalCode: '', country: '', isDefault: false });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to add address')
+  });
+
+  const deleteAddressMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/users/profile/address/${id}`);
+    },
+    onSuccess: () => {
+      toast.success('Address removed');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error('Failed to remove address')
+  });
+
+  const setDefaultAddressMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.put(`/users/profile/address/${id}`, { isDefault: true });
+    },
+    onSuccess: () => {
+      toast.success('Default address updated');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error('Failed to update address')
   });
 
   const { clearCart } = useCart();
@@ -308,7 +390,7 @@ const Profile = () => {
               </div>
             )}
 
-            {/* VIEW 2: ADDRESSES (Placeholder) */}
+            {/* VIEW 2: ADDRESSES */}
             {activeTab === 'addresses' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex justify-between items-center mb-6">
@@ -316,19 +398,150 @@ const Profile = () => {
                     <h1 className="text-3xl font-bold text-foreground">Addresses</h1>
                     <p className="text-muted-foreground mt-1">Manage your shipping addresses</p>
                   </div>
-                  <Button disabled>
-                    <Plus className="w-4 h-4 mr-2" /> Add New
-                  </Button>
+
+                  <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" /> Add New
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Address</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={addAddressMutation.mutate} className="space-y-4 py-2">
+                        <div className="space-y-2">
+                          <Label>Full Name</Label>
+                          <Input
+                            placeholder="John "
+                            value={addressForm.name}
+                            onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Phone Number</Label>
+                          <Input
+                            placeholder="+94 77 123 4567"
+                            value={addressForm.phone}
+                            onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Address</Label>
+                          <Input
+                            placeholder="123 Main St"
+                            value={addressForm.address}
+                            onChange={(e) => setAddressForm({ ...addressForm, address: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>City</Label>
+                            <Input
+                              placeholder="Colombo"
+                              value={addressForm.city}
+                              onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Postal Code</Label>
+                            <Input
+                              placeholder="10100"
+                              value={addressForm.postalCode}
+                              onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Country</Label>
+                          <Input
+                            placeholder="Sri Lanka"
+                            value={addressForm.country}
+                            onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                            required
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-2 pt-2">
+                          <Checkbox
+                            id="isDefault"
+                            checked={addressForm.isDefault}
+                            onCheckedChange={(checked) => setAddressForm({ ...addressForm, isDefault: checked as boolean })}
+                          />
+                          <Label htmlFor="isDefault">Set as default address</Label>
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit" disabled={addAddressMutation.isPending}>
+                            {addAddressMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Address
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-                <Card className="border-dashed border-2 shadow-none bg-muted/20">
-                  <CardContent className="p-12 text-center">
-                    <MapPin className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No addresses saved</h3>
-                    <p className="text-muted-foreground">
-                      This feature is coming soon! You will be able to save multiple shipping addresses here.
-                    </p>
-                  </CardContent>
-                </Card>
+
+                {!user?.addresses || user.addresses.length === 0 ? (
+                  <Card className="border-dashed border-2 shadow-none bg-muted/20">
+                    <CardContent className="p-12 text-center">
+                      <MapPin className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No addresses saved</h3>
+                      <p className="text-muted-foreground">
+                        Add an address to speed up your checkout process.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {user.addresses.map((addr) => (
+                      <Card key={addr._id} className="relative group overflow-hidden border shadow-sm">
+                        <CardContent className="p-6 flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-lg">{addr.name}</h4>
+                              {addr.isDefault && <Badge variant="secondary" className="bg-primary/10 text-primary">Default</Badge>}
+                            </div>
+                            <p className="text-muted-foreground text-sm flex items-center gap-2">
+                              {addr.phone}
+                            </p>
+                            <Separator className="my-2 w-10" />
+                            <p className="text-muted-foreground">{addr.address}</p>
+                            <p className="text-muted-foreground text-sm">{addr.city}, {addr.postalCode}</p>
+                            <p className="text-muted-foreground text-sm">{addr.country}</p>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            {!addr.isDefault && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8"
+                                onClick={() => setDefaultAddressMutation.mutate(addr._id)}
+                                disabled={setDefaultAddressMutation.isPending}
+                              >
+                                <Star className="w-4 h-4 mr-2" /> Set Default
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => deleteAddressMutation.mutate(addr._id)}
+                              disabled={deleteAddressMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -339,18 +552,40 @@ const Profile = () => {
                   <h1 className="text-3xl font-bold text-foreground">My Wishlist</h1>
                   <p className="text-muted-foreground mt-1">Products you want to buy later</p>
                 </div>
-                <Card className="border-dashed border-2 shadow-none bg-muted/20">
-                  <CardContent className="p-12 text-center">
-                    <Heart className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Your wishlist is empty</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Save your favorite items here to find them easily later.
-                    </p>
-                    <Button asChild size="lg">
-                      <span className="cursor-pointer" onClick={() => navigate('/shop')}>Find Products</span>
-                    </Button>
-                  </CardContent>
-                </Card>
+                {wishlistLoading ? (
+                  <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
+                ) : !wishlist || wishlist.length === 0 ? (
+                  <Card className="border-dashed border-2 shadow-none bg-muted/20">
+                    <CardContent className="p-12 text-center">
+                      <Heart className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">Your wishlist is empty</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Save your favorite items here to find them easily later.
+                      </p>
+                      <Button asChild size="lg">
+                        <span className="cursor-pointer" onClick={() => navigate('/shop')}>Find Products</span>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {wishlist.map((item: any) => (
+                      <div key={item._id} className="h-full">
+                        <ProductCard product={{
+                          id: item._id,
+                          name: item.name,
+                          price: item.price,
+                          image: item.imageUrl,
+                          category: item.category,
+                          description: item.description,
+                          inStock: item.countInStock > 0,
+                          weight: item.weight,
+                          flavor: item.flavor
+                        }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

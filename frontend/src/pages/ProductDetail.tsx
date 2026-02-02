@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Shield, Heart, Loader2, Star, User } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -47,6 +48,59 @@ const ProductDetail = () => {
   // Review Form State
   const [ratingInput, setRatingInput] = useState('5');
   const [comment, setComment] = useState('');
+
+  // Check auth
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+
+  // Fetch user profile to get wishlist
+  const { data: userProfile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => (await api.get('/users/profile')).data,
+    enabled: !!userInfo,
+    retry: false
+  });
+
+  const isInWishlist = useMemo(() => {
+    if (!userProfile?.wishlist) return false;
+    return userProfile.wishlist.some((item: any) =>
+      (typeof item === 'string' ? item : item._id) === id
+    );
+  }, [userProfile, id]);
+
+  const addToWishlistMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/users/wishlist', { productId: id });
+    },
+    onSuccess: () => {
+      toast.success('Added to wishlist');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to add to wishlist')
+  });
+
+  const removeFromWishlistMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/users/wishlist/${id}`);
+    },
+    onSuccess: () => {
+      toast.success('Removed from wishlist');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => toast.error('Failed to remove from wishlist')
+  });
+
+  const handleWishlistClick = () => {
+    if (!userInfo) {
+      toast.error('Please login to use wishlist');
+      return;
+    }
+
+    if (isInWishlist) {
+      removeFromWishlistMutation.mutate();
+    } else {
+      addToWishlistMutation.mutate();
+    }
+  };
 
   // 1. Fetch Product
   const { data: product, isLoading, isError } = useQuery({
@@ -180,7 +234,14 @@ const ProductDetail = () => {
               <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={isOutOfStock}>
                 <ShoppingCart className="mr-2 h-5 w-5" /> {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
               </Button>
-              <Button variant="outline" size="lg"><Heart className="w-5 h-5" /></Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleWishlistClick}
+                className={cn("transition-colors", isInWishlist && "border-red-200 bg-red-50 hover:bg-red-100")}
+              >
+                <Heart className={cn("w-5 h-5 transition-colors", isInWishlist && "fill-red-500 text-red-500")} />
+              </Button>
             </div>
           </div>
         </div>
