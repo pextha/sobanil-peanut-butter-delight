@@ -97,13 +97,13 @@ const ProductDetail = () => {
 
   if (isLoading) return (
     <div className="min-h-screen bg-background flex flex-col">
-       <Navbar /><div className="flex-1 flex justify-center items-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div><Footer />
+      <Navbar /><div className="flex-1 flex justify-center items-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div><Footer />
     </div>
   );
-  
+
   if (isError || !product) return (
     <div className="min-h-screen bg-background flex flex-col">
-       <Navbar /><div className="flex-1 flex justify-center items-center text-lg">Product not found</div><Footer />
+      <Navbar /><div className="flex-1 flex justify-center items-center text-lg">Product not found</div><Footer />
     </div>
   );
 
@@ -118,7 +118,7 @@ const ProductDetail = () => {
         </Button>
 
         <div className="grid lg:grid-cols-2 gap-12 mb-16">
-                   {/* Product Image */}
+          {/* Product Image */}
 
           <div className="bg-card rounded-2xl overflow-hidden shadow-lg relative group">
             <img
@@ -132,7 +132,7 @@ const ProductDetail = () => {
             {isOutOfStock && (
               <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
 
-                 <Badge variant="destructive" className="text-lg px-4 py-2">Out of Stock</Badge>
+                <Badge variant="destructive" className="text-lg px-4 py-2">Out of Stock</Badge>
 
               </div>
 
@@ -144,16 +144,16 @@ const ProductDetail = () => {
           <div className="space-y-6">
             <div>
               <div className="flex justify-between items-start mb-2">
-                 <div className="flex gap-2">
-                    <Badge variant="secondary">{product.category}</Badge>
-                    {product.flavor && <Badge variant="outline">{product.flavor}</Badge>}
-                 </div>
-                 {/* Rating Badge */}
-                 <div className="flex items-center gap-1 text-yellow-500 bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="font-bold text-foreground">{product.rating ? product.rating.toFixed(1) : 'New'}</span>
-                    <span className="text-muted-foreground text-xs ml-1">({product.numReviews} reviews)</span>
-                 </div>
+                <div className="flex gap-2">
+                  <Badge variant="secondary">{product.category}</Badge>
+                  {product.flavor && <Badge variant="outline">{product.flavor}</Badge>}
+                </div>
+                {/* Rating Badge */}
+                <div className="flex items-center gap-1 text-yellow-500 bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100">
+                  <Star className="w-4 h-4 fill-current" />
+                  <span className="font-bold text-foreground">{product.rating ? product.rating.toFixed(1) : 'New'}</span>
+                  <span className="text-muted-foreground text-xs ml-1">({product.numReviews} reviews)</span>
+                </div>
               </div>
               <h1 className="text-3xl font-bold mt-2">{product.name}</h1>
             </div>
@@ -170,11 +170,11 @@ const ProductDetail = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3 bg-muted rounded-lg p-1">
                 <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>
-                   <Minus className="w-4 h-4" />
+                  <Minus className="w-4 h-4" />
                 </Button>
                 <span className="w-8 text-center font-medium">{quantity}</span>
                 <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} disabled={isOutOfStock}>
-                   <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                 </Button>
               </div>
               <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={isOutOfStock}>
@@ -193,9 +193,9 @@ const ProductDetail = () => {
           <div>
             <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
             {(!product.reviews || product.reviews.length === 0) && (
-                <div className="p-8 bg-muted/20 rounded-xl text-center border border-dashed">
-                    <p className="text-muted-foreground">No reviews yet. Be the first to share your thoughts!</p>
-                </div>
+              <div className="p-8 bg-muted/20 rounded-xl text-center border border-dashed">
+                <p className="text-muted-foreground">No reviews yet. Be the first to share your thoughts!</p>
+              </div>
             )}
             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
               {product.reviews && product.reviews.map((review) => (
@@ -239,24 +239,27 @@ const ProductDetail = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">Comment</label>
-                <Textarea 
-                  value={comment} 
-                  onChange={(e) => setComment(e.target.value)} 
-                  placeholder="Share your experience with this product..." 
-                  rows={4} 
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Share your experience with this product..."
+                  rows={4}
                   className="resize-none"
                 />
               </div>
 
-              <Button type="submit" disabled={reviewMutation.isPending} className="w-full">
-                {reviewMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : 'Submit Review'}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                * Requires Login
-              </p>
+              {localStorage.getItem('userInfo') ? (
+                <Button type="submit" disabled={reviewMutation.isPending} className="w-full">
+                  {reviewMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : 'Submit Review'}
+                </Button>
+              ) : (
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/login">Login to Review</Link>
+                </Button>
+              )}
             </form>
           </div>
         </div>

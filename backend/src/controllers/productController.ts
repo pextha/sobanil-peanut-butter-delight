@@ -85,27 +85,25 @@ export const createProductReview = asyncHandler(async (req: any, res: Response) 
   const product = await Product.findById(req.params.id);
 
   if (product) {
-    // Check if user already reviewed
     const alreadyReviewed = product.reviews.find(
       (r: any) => r.user.toString() === req.user._id.toString()
     );
 
     if (alreadyReviewed) {
-      res.status(400);
-      throw new Error('Product already reviewed');
+      alreadyReviewed.rating = Number(rating);
+      alreadyReviewed.comment = comment;
+    } else {
+      const review = {
+        name: req.user.name,
+        rating: Number(rating),
+        comment,
+        user: req.user._id,
+      };
+
+      product.reviews.push(review);
+      product.numReviews = product.reviews.length;
     }
 
-    const review = {
-      name: req.user.name,
-      rating: Number(rating),
-      comment,
-      user: req.user._id,
-    };
-
-    product.reviews.push(review);
-    product.numReviews = product.reviews.length;
-
-    // Calculate Average Rating
     product.rating =
       product.reviews.reduce((acc: number, item: any) => item.rating + acc, 0) /
       product.reviews.length;
