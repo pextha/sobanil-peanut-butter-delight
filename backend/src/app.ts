@@ -6,6 +6,7 @@ import userRoutes from './routes/userRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import attributeRoutes from './routes/attributeRoutes';
 import cartRoutes from './routes/cartRoutes';
+import contactRoutes from './routes/contactRoutes';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/attributes', attributeRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/contact', contactRoutes);
 
 
 const currentDir = path.resolve();

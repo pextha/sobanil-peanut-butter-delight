@@ -3,6 +3,7 @@ import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-
 import { Separator } from '@/components/ui/separator';
 import logoImage from '@/assets/sobanil-logo.jpg';
 
+
 export function Footer() {
   return (
     <footer className="bg-peanut-dark text-peanut-cream">
@@ -12,16 +13,16 @@ export function Footer() {
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform">
-            <img
-              src={logoImage}
-              alt="Sobanil Logo"
-              className="w-full h-full object-cover"
-            />
-          </div>
+                <img
+                  src={logoImage}
+                  alt="Sobanil Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <span className="text-xl font-bold tracking-tight">Sobanil</span>
             </Link>
             <p className="text-peanut-cream/80 text-sm leading-relaxed">
-              Premium peanut butter crafted with love and the finest ingredients. 
+              Premium peanut butter crafted with love and the finest ingredients.
               Experience the authentic taste of nature in every jar.
             </p>
             <div className="flex gap-4">
