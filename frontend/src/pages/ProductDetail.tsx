@@ -218,6 +218,20 @@ const ProductDetail = () => {
             </div>
 
             <p className="text-muted-foreground text-lg">{product.description}</p>
+
+            {/* Delivery Info */}
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2 border border-muted-foreground/10">
+              <div className="flex items-center gap-2 font-medium">
+                <Truck className="w-5 h-5 text-primary" />
+                <span>Delivery Information</span>
+              </div>
+              <div className="text-sm text-muted-foreground space-y-1 ml-7">
+                <p>Base Delivery Fee: <span className="font-semibold text-foreground">Rs. 350</span> (up to 1kg)</p>
+                <p>Additional Weight: <span className="font-semibold text-foreground">Rs. 80</span> (per extra kg)</p>
+                <p className="text-xs italic mt-1 text-primary/80">* Delivery calculated at checkout based on total cart weight.</p>
+              </div>
+            </div>
+
             <Separator />
 
             {/* Actions */}

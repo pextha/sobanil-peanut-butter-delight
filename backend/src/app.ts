@@ -7,6 +7,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import attributeRoutes from './routes/attributeRoutes';
 import cartRoutes from './routes/cartRoutes';
 import contactRoutes from './routes/contactRoutes';
+import orderRoutes from './routes/orderRoutes';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/attributes', attributeRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/orders', orderRoutes);
 
 
 const currentDir = path.resolve();
